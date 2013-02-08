@@ -148,7 +148,7 @@ main = do
                 optStartIndex = index,
                 optPrefix = prefix,
                 optSafety = safety } = opts
-  if showVersion -- If version option is specified, pint version and exit
+  if showVersion -- If version option is specified, print version and exit
     then putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess
     else return ()
   directory <- path
