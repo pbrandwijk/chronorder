@@ -1,0 +1,31 @@
+Requirements:
+
+- Unix-like operating system (tested with Ubuntu)
+- Glasgow Haskell Compiler (tested with version 7.0.3)
+- GNU Make (tested with version 3.81)
+
+Instructions:
+
+Open a terminal and change to the directory containing 
+the source files of chronorder. Execute the following 
+command:
+
+$ make chronorder
+
+The chronorder executable is now being build and the 
+man pages are compressed.
+
+Now move the executable to a convenient place. For example:
+
+$ sudo mv chronorder /usr/bin/
+
+Now move the man pages to their standard location so they
+can be found:
+
+$ sudo mv man1/chronorder.1.gz /usr/share/man/man1/
+
+Lastly clean up the source directory using:
+
+$ make clean
+
+The program chronorder can now be used.
