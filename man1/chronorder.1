@@ -1,0 +1,57 @@
+.\"
+.\"     This is free software and only distributed under the
+.\"     terms of the Gnu Public License. Author: Pieter Brandwijk
+.\"
+.TH chronorder 1 "February 2013" "File utilities"  \" -*- nroff -*-
+.SH NAME
+chronorder \- rename the files in a directory so that the alphabetical order matches the chronological order
+.SH SYNOPSIS
+.B chronorder
+[\-#ehIp][\-d#] directory\-path 
+.SH DESCRIPTION
+.B chronorder
+is a command that opperates on files in a directory that renames files so that the alphabetical order matches the chronological order. 
+.PP
+The default behavior of the command is to prepend "1 " to the name of the oldest file, "2 " to the second oldest file and so on. Optionally, an additional prefix can be specified that will be put between the index number and the original filename.
+.SH OPTIONS
+.TP
+.I \-v
+Prints version information
+.TP
+.I \-d
+Specify which directory to process. Default is the current directory.
+.TP
+.I \-e
+Only process files with given extension(s). Specify multiple extensions between quotes, eg. ".jpg .png".
+.TP
+.I \-\-start\-index
+Specify the starting index number which is prepended to the oldest file.
+.TP
+.I \-\-prefix
+Specify a prefix that is given to each file. The prefix is put after the index number.
+.TP
+.I \-\-no\-safety
+Do not ask safety confirmation before altering the file names in the directory.
+.SH EXAMPLE
+.I  chronorder \-e .bar
+.PP
+If these are the original contents of the current directory (numbers behind file names represent chronological order):
+.br
+bar.bar (3)
+.br
+foo.foo (2)
+.br
+foo.bar (1)
+.PP
+Then the result of executing the command will be:
+.br
+1 foo.bar
+.br
+2 bar.bar
+.br
+foo.foo
+.SH BUGS
+The program does not recognize multiple extensions in a file name. This may become problematic if
+an option is added that removes the original file name.
+.SH AUTHOR
+Pieter Brandwijk (pieter@pbrandwijk.com)
