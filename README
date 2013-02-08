@@ -1,0 +1,16 @@
+Chronorder is a file renaming program.
+
+Its default behavior is to sort the files in the current 
+directory in ascending chronological order (oldest first).
+Every file gets an index number prepended to it. This 
+assures that the alphabetical order of the files matches
+the chronological order.
+
+A use case for the program is for example a directory 
+containing pictures of some event taken by different cameras.
+The alphabetical order of the pictures can than be matched
+with the chronological order using this program.
+
+Keep in mind that this program alters the actual file names
+on disk. After confirming the safety question there is no
+automatic way to undo the changes, only manually.
