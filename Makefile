@@ -3,7 +3,6 @@ BIN = /usr/bin
 MAN = /usr/share/man/man1
 
 install: chronorder-target
-	install -d $(BIN)
 	install ./chronorder $(BIN)
 	install ./man1/chronorder.1.gz $(MAN)
 
