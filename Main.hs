@@ -35,6 +35,8 @@
   Possible improvements:
   - Check first that renaming does in fact change alphabetical order. If not: abort.
   - Optionally show list of files to be renamed in safety question.
+  - Add zeros before smaller numbers eg. 001, 002 if there are between 100 and 1000 files
+  - Make prefix prepend text BEFORE index number
 
   Test cases: 
   - equal names (different extension)
