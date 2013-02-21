@@ -31,6 +31,7 @@
   --no-log Don't print a log with all changed filenames to the console
   --restore [STRING] Restore file names from given log file
   --reverse-order sort in ascending order, so newest files first
+  --delete-original Delete the original name
 
   Possible improvements:
   - Check first that renaming does in fact change alphabetical order. If not: abort.
