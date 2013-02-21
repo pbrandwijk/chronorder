@@ -38,6 +38,7 @@
   - Optionally show list of files to be renamed in safety question.
   - Add zeros before smaller numbers eg. 001, 002 if there are between 100 and 1000 files
   - Make prefix prepend text BEFORE index number
+  - Display example of conversion with safety question (oldest file, for instance)
 
   Test cases: 
   - equal names (different extension)
