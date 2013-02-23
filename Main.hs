@@ -23,7 +23,7 @@
   -d [STRING] specify directory to order, default is pwd (maybe without flag -d?)
   -e [STRING] Only process files with specified extension (use ".foo .bar" for more than one)
   --start-index [INT] Start at given index
-  --prefix [STRING] Prepend prefix to each filename
+  --infix [STRING] Insert infix between index and file name
   --no-safety Don't ask safety question
   --no-log Don't print a log with all changed filenames to the console
 
@@ -32,11 +32,10 @@
   --restore [STRING] Restore file names from given log file
   --reverse-order sort in ascending order, so newest files first
   --delete-original Delete the original name
+  --prefix Prepend text before the index number
 
   Possible improvements:
   - Check first that renaming does in fact change alphabetical order. If not, ask confirmation.
-  - Add zeros before smaller numbers eg. 001, 002 if there are between 100 and 1000 files
-  - Make prefix prepend text BEFORE index number
   - Display example of conversion with safety question (oldest file, for instance)
   - Replace errors with putStrLn .. >> exitWith ExitSuccess
 
@@ -65,7 +64,7 @@ data Options = Options {
     optExtension :: String -> Bool,
     optPath :: IO FilePath,
     optStartIndex :: Int,
-    optPrefix :: String,
+    optInfix :: String,
     optSafety :: Bool,
     optLog :: Bool
   }
@@ -78,7 +77,7 @@ defaultOptions = Options {
     optExtension = (\x -> True), -- Without an extension specified any file can be processed
     optPath = getCurrentDirectory, -- Without a directory specified use the current directory
     optStartIndex = 1, -- Start at index 1 by default
-    optPrefix = "", -- Default prefix is empty string
+    optInfix = "_", -- Default infix is "_"
     optSafety = True, -- By default ask safety question
     optLog = True -- By default do show a log of the affected files
   }
@@ -91,7 +90,7 @@ options = [
     Option ['d'] ["directory"] (ReqArg specPath "DIRECTORY") "directory to process",
     Option ['e'] ["extension"] (ReqArg specExtension "EXTENSION") "only process files with specified extension",
     Option [] ["start-index"] (ReqArg specStartIndex "INT") "start numbering at given index",
-    Option [] ["prefix"] (ReqArg specPrefix "STRING") "prepend prefix to each file name",
+    Option [] ["infix"] (ReqArg specInfix "STRING") "insert infix between index and file name",
     Option [] ["no-safety"] (NoArg specSafety) "don't ask safety confirmation before renaming",
     Option [] ["no-log"] (NoArg specLog) "don't print a log to the console"
   ]
@@ -133,8 +132,8 @@ specStartIndex arg opts = return opts {
   }
 
 -- Return the given argument as string.
-specPrefix arg opts = return opts {
-    optPrefix = arg
+specInfix arg opts = return opts {
+    optInfix = arg
   }
 
 -- Return False so the safety question won't be asked.
@@ -148,13 +147,6 @@ specLog opts = return opts {
   }
 
 type Handle = (EpochTime, FilePath)
-
-printCopyright = do
-  putStrLn "Chronorder  Copyright (C) 2013  Pieter Brandwijk"
-  putStrLn "This program comes with ABSOLUTELY NO WARRANTY\n"
-
-printUsage = 
-  putStrLn $ usageInfo "Usage: chronorder [OPTION...]" options
 
 main = do
   -- Setting buffer modes assures that getChar doesn't need ENTER after a character has been input
@@ -173,7 +165,7 @@ main = do
                 optExtension = extensionFilter,
                 optPath = path,
                 optStartIndex = index,
-                optPrefix = prefix,
+                optInfix = infx,
                 optSafety = safety, 
                 optLog = log } = opts
   -- Show version and exit if -v option is specified
@@ -191,7 +183,7 @@ main = do
   let fileMap :: [Handle]
       fileMap = [ (modificationTime status, name) | (status, name) <- filteredFiles ]
   let sortedFileMap = qsort fileMap
-  let newNameMap = genName (map snd sortedFileMap) index (length sortedFileMap) prefix
+  let newNameMap = genName (map snd sortedFileMap) index (length sortedFileMap) infx
   -- Don't ask for safety confirmation if --no-safety option is specified
   attempt safety (safetyQuestion directory newNameMap)
   -- Do the actual renaming
@@ -204,6 +196,10 @@ attempt :: Bool -> IO () -> IO ()
 attempt True action = action
 attempt False action = return ()
 
+-- The actual action that renames the file on disk
+renameFile :: (FilePath, FilePath) -> IO ()
+renameFile (old, new) = rename old new
+
 -- Prompt the user to confirm the files in the directory should indeed be renamed.
 safetyQuestion :: FilePath -> [(FilePath, FilePath)] -> IO ()
 safetyQuestion directory newNameMap = do
@@ -215,9 +211,12 @@ safetyQuestion directory newNameMap = do
     's' -> mapM_ printLog newNameMap >> safetyQuestion directory newNameMap
     _   -> putStrLn "Nothing changed" >> exitWith ExitSuccess
 
--- The actual action that renames the file on disk
-renameFile :: (FilePath, FilePath) -> IO ()
-renameFile (old, new) = rename old new
+printCopyright = do
+  putStrLn "Chronorder  Copyright (C) 2013  Pieter Brandwijk"
+  putStrLn "This program comes with ABSOLUTELY NO WARRANTY\n"
+
+printUsage = 
+  putStrLn $ usageInfo "Usage: chronorder [OPTION...]" options
 
 -- Print a record of the old and new name of a file
 printLog :: (FilePath, FilePath) -> IO ()
@@ -228,7 +227,7 @@ type Total = Int
 type Infix = String
 
 -- Generate a list of tuples with an old and new file path.
--- The new file path is based on the old file path, the index number and optional prefix
+-- The new file path is based on the old file path, the index number and optional infix
 -- TODO: Check for double extensions (takeBaseName only trims last extension)
 genName :: [FilePath] -> Index -> Total -> Infix -> [(FilePath, FilePath)]
 genName [] _ _ _ = []
@@ -241,6 +240,14 @@ genName (filePath:xs) i t infx = (filePath, newFilePath) : genName xs (i+1) t in
     newBaseName = prependingZeros ++ show i ++ infx ++ baseName
     newFilePath = replaceBaseName filePath newBaseName
 
+-- Counts the number of digits in the decimal representation of an integer
+significantDigits :: Int -> Int
+significantDigits n = significantDigits' n 1
+  where
+    significantDigits' :: Int -> Int -> Int
+    significantDigits' n c | n < (10^c) = c
+                           | otherwise = significantDigits' n (c+1)
+
 -- Quick sort algorithm applied to Handle type. Files are sorted by ascending modification date.
 qsort :: [Handle] -> [Handle]
 qsort [] = []
@@ -250,11 +257,3 @@ qsort (x:xs) = (qsort older) ++ [x] ++ (qsort rest)
     rest = (xs \\ older) -- files younger and of equal date
     olderThan :: Handle -> Handle -> Bool
     olderThan (atime,_) (btime,_) = atime > btime
-
--- Counts the number of digits in the decimal representation of an integer
-significantDigits :: Int -> Int
-significantDigits n = significantDigits' n 1
-  where
-    significantDigits' :: Int -> Int -> Int
-    significantDigits' n c | n < (10^c) = c
-                           | otherwise = significantDigits' n (c+1)
