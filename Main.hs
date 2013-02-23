@@ -62,7 +62,8 @@ data Options = Options {
     optPath :: IO FilePath,
     optStartIndex :: Int,
     optPrefix :: String,
-    optSafety :: Bool
+    optSafety :: Bool,
+    optLog :: Bool
   }
 
 -- The options that are loaded if no option is specified on the command line
@@ -73,7 +74,8 @@ defaultOptions = Options {
     optPath = getCurrentDirectory, -- Without a directory specified use the current directory
     optStartIndex = 1, -- Start at index 1 by default
     optPrefix = "", -- Default prefix is empty string
-    optSafety = True -- By default ask safety question
+    optSafety = True, -- By default ask safety question
+    optLog = True -- By default do show a log of the affected files
   }
 
 -- The specification of all the options used in the program
@@ -84,7 +86,8 @@ options = [
     Option ['e'] ["extension"] (ReqArg specExtension "EXTENSION") "only process files with specified extension",
     Option [] ["start-index"] (ReqArg specStartIndex "INT") "start numbering at given index",
     Option [] ["prefix"] (ReqArg specPrefix "STRING") "prepend prefix to each file name",
-    Option [] ["no-safety"] (NoArg specSafety) "don't ask safety confirmation before renaming"
+    Option [] ["no-safety"] (NoArg specSafety) "don't ask safety confirmation before renaming",
+    Option [] ["no-log"] (NoArg specSafety) "don't print a log of all the affected files to the console"
   ]
 
 -- Set showVersion option to True
@@ -150,7 +153,8 @@ main = do
                 optPath = path,
                 optStartIndex = index,
                 optPrefix = prefix,
-                optSafety = safety } = opts
+                optSafety = safety, 
+                optLog = log } = opts
   if showVersion -- If version option is specified, print version and exit
     then putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess
     else return ()
@@ -169,7 +173,9 @@ main = do
     then safetyQuestion directory newNameMap
     else return ()
   mapM_ renameFile newNameMap
-  mapM_ printLog newNameMap
+  if log
+    then mapM_ printLog newNameMap
+    else return ()
 
 -- Prompt the user to confirm the files in the directory should indeed be renamed.
 safetyQuestion :: FilePath -> [(FilePath, FilePath)] -> IO ()
