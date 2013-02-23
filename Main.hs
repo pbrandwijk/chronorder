@@ -59,6 +59,7 @@ import Data.List( isSuffixOf, (\\) )
 -- The options type constructor holds all the option types and functions used in the program.
 data Options = Options {
     optVersion :: Bool,
+    optHelp :: Bool,
     optExtension :: String -> Bool,
     optPath :: IO FilePath,
     optStartIndex :: Int,
@@ -71,6 +72,7 @@ data Options = Options {
 defaultOptions :: Options
 defaultOptions = Options {
     optVersion  = False, -- Without a version option specified, display version is False
+    optHelp = False, -- Without the help option specified, do not print help message
     optExtension = (\x -> True), -- Without an extension specified any file can be processed
     optPath = getCurrentDirectory, -- Without a directory specified use the current directory
     optStartIndex = 1, -- Start at index 1 by default
@@ -83,17 +85,23 @@ defaultOptions = Options {
 options :: [OptDescr (Options -> IO Options)]
 options = [
     Option ['v'] ["version"] (NoArg specVersion) "show version number",
+    Option ['h', '?'] ["help"] (NoArg specHelp) "print this help message",
     Option ['d'] ["directory"] (ReqArg specPath "DIRECTORY") "directory to process",
     Option ['e'] ["extension"] (ReqArg specExtension "EXTENSION") "only process files with specified extension",
     Option [] ["start-index"] (ReqArg specStartIndex "INT") "start numbering at given index",
     Option [] ["prefix"] (ReqArg specPrefix "STRING") "prepend prefix to each file name",
     Option [] ["no-safety"] (NoArg specSafety) "don't ask safety confirmation before renaming",
-    Option [] ["no-log"] (NoArg specLog) "don't print a log of all the affected files to the console"
+    Option [] ["no-log"] (NoArg specLog) "don't print a log to the console"
   ]
 
 -- Set showVersion option to True
 specVersion opts = return opts { 
     optVersion = True
+  }
+
+-- Set showHelp option to True
+specHelp opts = return opts {
+    optHelp = True
   }
 
 -- Check if the specified argument is a directory. If so, return that. If not, error.
@@ -155,6 +163,7 @@ main = do
   attempt (msgs /= []) (putStrLn (concat msgs) >> printUsage >> exitWith ExitSuccess) --error $ concat msgs ++ usageInfo "Usage: chronorder [OPTION...]" options)
   opts <- foldl (>>=) (return defaultOptions) actions
   let Options { optVersion = showVersion,
+                optHelp = showHelp,
                 optExtension = extensionFilter,
                 optPath = path,
                 optStartIndex = index,
@@ -163,6 +172,8 @@ main = do
                 optLog = log } = opts
   -- Show version and exit if -v option is specified
   attempt showVersion (putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess)
+  -- Show help message and exit if help option is specified
+  attempt showHelp (printUsage >> exitWith ExitSuccess)
   printCopyright
   directory <- path
   let fileFilter = extensionFilter -- other filters can be added with (.)
