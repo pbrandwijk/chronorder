@@ -35,7 +35,6 @@
 
   Possible improvements:
   - Check first that renaming does in fact change alphabetical order. If not: abort.
-  - Optionally show list of files to be renamed in safety question.
   - Add zeros before smaller numbers eg. 001, 002 if there are between 100 and 1000 files
   - Make prefix prepend text BEFORE index number
   - Display example of conversion with safety question (oldest file, for instance)
@@ -156,9 +155,6 @@ main = do
     then putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess
     else return ()
   directory <- path
-  if safety -- Don't ask for safety confirmation if --no-safety option is specified
-    then safetyQuestion directory
-    else return ()
   let fileFilter = extensionFilter -- other filters can be added with (.)
   contents <- getDirectoryContents directory
   statuses <- mapM getFileStatus contents
@@ -169,18 +165,22 @@ main = do
       fileMap = [ (modificationTime status, name) | (status, name) <- filteredFiles ]
   let sortedFileMap = qsort fileMap
   let newNameMap = genName (map snd sortedFileMap) index prefix
+  if safety -- Don't ask for safety confirmation if --no-safety option is specified
+    then safetyQuestion directory newNameMap
+    else return ()
   mapM_ renameFile newNameMap
   mapM_ printLog newNameMap
 
--- Prompt the user to confirm the file names in the directory should indeed be changed.
-safetyQuestion :: FilePath -> IO ()
-safetyQuestion directory = do
-  putStrLn ("Caution, this will rename files in directory " ++ directory)
-  putStrLn "Are you sure you want to continue? [y/n]: "
+-- Prompt the user to confirm the files in the directory should indeed be renamed.
+safetyQuestion :: FilePath -> [(FilePath, FilePath)] -> IO ()
+safetyQuestion directory newNameMap = do
+  putStrLn ("Caution, this will rename " ++ (show $ length newNameMap) ++ " files in directory " ++ directory)
+  putStrLn "Are you sure you want to continue? (enter 's' to preview the effects) [y/n/s]: "
   char <- getChar
-  if char == 'y' 
-    then return () 
-    else putStrLn "Nothing changed" >> exitWith ExitSuccess
+  case char of
+    'y' -> return ()
+    's' -> mapM_ printLog newNameMap >> safetyQuestion directory newNameMap
+    _   -> putStrLn "Nothing changed" >> exitWith ExitSuccess
 
 -- The actual action that renames the file on disk
 renameFile :: (FilePath, FilePath) -> IO ()
@@ -188,7 +188,7 @@ renameFile (old, new) = rename old new
 
 -- Print a record of the old and new name of a file
 printLog :: (FilePath, FilePath) -> IO ()
-printLog (a,b) = putStrLn $ "Renamed " ++ a ++ " to " ++ b
+printLog (a,b) = putStrLn $ a ++ " -> " ++ b
 
 -- Generate a list of tuples with an old and new file path.
 -- The new file path is based on the old file path, the index number and optional prefix
