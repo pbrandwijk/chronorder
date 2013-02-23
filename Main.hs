@@ -49,7 +49,8 @@ module Main ( main ) where
 
 import IO ( putStrLn )
 import System ( getArgs, exitWith, ExitCode (ExitSuccess) )
-import System.Console.GetOpt
+import System.Console.GetOpt ( usageInfo, getOpt, 
+              ArgDescr (NoArg, ReqArg), OptDescr (Option), ArgOrder (RequireOrder) )
 import System.Directory ( getDirectoryContents, getCurrentDirectory, doesDirectoryExist )
 import System.FilePath.Posix ( takeBaseName, replaceBaseName )
 import System.IO ( hSetBuffering, stdin, stdout, BufferMode (NoBuffering) )
