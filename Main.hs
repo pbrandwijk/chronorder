@@ -19,6 +19,7 @@
 {-
   Supported options:
   -v Print version
+  -h, -? Print help message
   -d [STRING] specify directory to order, default is pwd (maybe without flag -d?)
   -e [STRING] Only process files with specified extension (use ".foo .bar" for more than one)
   --start-index [INT] Start at given index
@@ -27,7 +28,6 @@
   --no-log Don't print a log with all changed filenames to the console
 
   Possible options:
-  -h, -? Print help message
   --pattern [REGEX] Only order files that comply to the pattern
   --restore [STRING] Restore file names from given log file
   --reverse-order sort in ascending order, so newest files first
@@ -52,6 +52,7 @@ import System ( getArgs, exitWith, ExitCode (ExitSuccess) )
 import System.Console.GetOpt
 import System.Directory ( getDirectoryContents, getCurrentDirectory, doesDirectoryExist )
 import System.FilePath.Posix ( takeBaseName, replaceBaseName )
+import System.IO ( hSetBuffering, stdin, stdout, BufferMode (NoBuffering) )
 import System.Posix.Files ( FileStatus, isRegularFile, modificationTime, getFileStatus, rename )
 import System.Posix.Types ( EpochTime )
 import Data.List( isSuffixOf, (\\) )
@@ -155,12 +156,16 @@ printUsage =
   putStrLn $ usageInfo "Usage: chronorder [OPTION...]" options
 
 main = do
+  -- Setting buffer modes assures that getChar doesn't need ENTER after a character has been input
+  -- terminal default is LineBuffering
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout NoBuffering
   args <- getArgs
   let (actions,nonOpts,msgs) = getOpt RequireOrder options args
   -- Terminate program if unrecognized options are found
   attempt (nonOpts /= []) (error $ "unrecognized arguments: " ++ unwords nonOpts)
   -- Terminate program if any errors in the options are found
-  attempt (msgs /= []) (putStrLn (concat msgs) >> printUsage >> exitWith ExitSuccess) --error $ concat msgs ++ usageInfo "Usage: chronorder [OPTION...]" options)
+  attempt (msgs /= []) (putStrLn (concat msgs) >> printUsage >> exitWith ExitSuccess)
   opts <- foldl (>>=) (return defaultOptions) actions
   let Options { optVersion = showVersion,
                 optHelp = showHelp,
