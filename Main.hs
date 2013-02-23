@@ -24,11 +24,11 @@
   --start-index [INT] Start at given index
   --prefix [STRING] Prepend prefix to each filename
   --no-safety Don't ask safety question
+  --no-log Don't print a log with all changed filenames to the console
 
   Possible options:
   -h, -? Print help message
   --pattern [REGEX] Only order files that comply to the pattern
-  --no-log Don't print a log with all changed filenames to the console
   --restore [STRING] Restore file names from given log file
   --reverse-order sort in ascending order, so newest files first
   --delete-original Delete the original name
@@ -38,6 +38,7 @@
   - Add zeros before smaller numbers eg. 001, 002 if there are between 100 and 1000 files
   - Make prefix prepend text BEFORE index number
   - Display example of conversion with safety question (oldest file, for instance)
+  - Replace errors with putStrLn .. >> exitWith ExitSuccess
 
   Test cases: 
   - equal names (different extension)
@@ -87,7 +88,7 @@ options = [
     Option [] ["start-index"] (ReqArg specStartIndex "INT") "start numbering at given index",
     Option [] ["prefix"] (ReqArg specPrefix "STRING") "prepend prefix to each file name",
     Option [] ["no-safety"] (NoArg specSafety) "don't ask safety confirmation before renaming",
-    Option [] ["no-log"] (NoArg specSafety) "don't print a log of all the affected files to the console"
+    Option [] ["no-log"] (NoArg specLog) "don't print a log of all the affected files to the console"
   ]
 
 -- Set showVersion option to True
@@ -131,6 +132,11 @@ specSafety opts = return opts {
     optSafety = False
   }
 
+-- Return False so no log will be printed after the renaming process
+specLog opts = return opts {
+    optLog = False
+  }
+
 type Handle = (EpochTime, FilePath)
 
 printCopyright = do
@@ -138,15 +144,12 @@ printCopyright = do
   putStrLn "This program comes with ABSOLUTELY NO WARRANTY\n"
 
 main = do
-  printCopyright
   args <- getArgs
   let (actions,nonOpts,msgs) = getOpt RequireOrder options args
-  if (nonOpts /= []) -- Terminate program if unrecognized options are found
-    then error $ "unrecognized arguments: " ++ unwords nonOpts
-    else return ()
-  if (msgs /= []) -- Terminate program if any errors in the options are found
-    then error $ concat msgs ++ usageInfo "Usage: chronorder [OPTION...]" options
-    else return ()
+  -- Terminate program if unrecognized options are found
+  attempt (nonOpts /= []) (error $ "unrecognized arguments: " ++ unwords nonOpts)
+  -- Terminate program if any errors in the options are found
+  attempt (msgs /= []) (error $ concat msgs ++ usageInfo "Usage: chronorder [OPTION...]" options)
   opts <- foldl (>>=) (return defaultOptions) actions
   let Options { optVersion = showVersion,
                 optExtension = extensionFilter,
@@ -155,9 +158,9 @@ main = do
                 optPrefix = prefix,
                 optSafety = safety, 
                 optLog = log } = opts
-  if showVersion -- If version option is specified, print version and exit
-    then putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess
-    else return ()
+  -- Show version and exit if -v option is specified
+  attempt showVersion (putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess)
+  printCopyright
   directory <- path
   let fileFilter = extensionFilter -- other filters can be added with (.)
   contents <- getDirectoryContents directory
@@ -169,13 +172,17 @@ main = do
       fileMap = [ (modificationTime status, name) | (status, name) <- filteredFiles ]
   let sortedFileMap = qsort fileMap
   let newNameMap = genName (map snd sortedFileMap) index prefix
-  if safety -- Don't ask for safety confirmation if --no-safety option is specified
-    then safetyQuestion directory newNameMap
-    else return ()
+  -- Don't ask for safety confirmation if --no-safety option is specified
+  attempt safety (safetyQuestion directory newNameMap)
+  -- Do the actual renaming
   mapM_ renameFile newNameMap
-  if log
-    then mapM_ printLog newNameMap
-    else return ()
+  -- Don't print log if --no-log is specified
+  attempt log (mapM_ printLog newNameMap)
+
+-- Helper function to reduce boiler plate code. Only execute action if condition is true.
+attempt :: Bool -> IO () -> IO ()
+attempt True action = action
+attempt False action = return ()
 
 -- Prompt the user to confirm the files in the directory should indeed be renamed.
 safetyQuestion :: FilePath -> [(FilePath, FilePath)] -> IO ()
