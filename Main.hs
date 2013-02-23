@@ -191,7 +191,7 @@ main = do
   let fileMap :: [Handle]
       fileMap = [ (modificationTime status, name) | (status, name) <- filteredFiles ]
   let sortedFileMap = qsort fileMap
-  let newNameMap = genName (map snd sortedFileMap) index prefix
+  let newNameMap = genName (map snd sortedFileMap) index (length sortedFileMap) prefix
   -- Don't ask for safety confirmation if --no-safety option is specified
   attempt safety (safetyQuestion directory newNameMap)
   -- Do the actual renaming
@@ -223,15 +223,22 @@ renameFile (old, new) = rename old new
 printLog :: (FilePath, FilePath) -> IO ()
 printLog (a,b) = putStrLn $ a ++ " -> " ++ b
 
+type Index = Int
+type Total = Int
+type Infix = String
+
 -- Generate a list of tuples with an old and new file path.
 -- The new file path is based on the old file path, the index number and optional prefix
 -- TODO: Check for double extensions (takeBaseName only trims last extension)
-genName :: [FilePath] -> Int -> String -> [(FilePath, FilePath)]
-genName [] _ _ = []
-genName (filePath:xs) i prefix = (filePath, newFilePath) : genName xs (i+1) prefix
+genName :: [FilePath] -> Index -> Total -> Infix -> [(FilePath, FilePath)]
+genName [] _ _ _ = []
+genName (filePath:xs) i t infx = (filePath, newFilePath) : genName xs (i+1) t infx
   where
+    highestDigits = significantDigits t
+    currentDigits = significantDigits i
+    prependingZeros = replicate (highestDigits - currentDigits) '0'
     baseName = takeBaseName filePath
-    newBaseName = show i ++ " " ++ prefix ++ baseName
+    newBaseName = prependingZeros ++ show i ++ infx ++ baseName
     newFilePath = replaceBaseName filePath newBaseName
 
 -- Quick sort algorithm applied to Handle type. Files are sorted by ascending modification date.
