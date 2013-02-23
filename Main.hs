@@ -242,3 +242,11 @@ qsort (x:xs) = (qsort older) ++ [x] ++ (qsort rest)
     rest = (xs \\ older) -- files younger and of equal date
     olderThan :: Handle -> Handle -> Bool
     olderThan (atime,_) (btime,_) = atime > btime
+
+-- Counts the number of digits in the decimal representation of an integer
+significantDigits :: Int -> Int
+significantDigits n = significantDigits' n 1
+  where
+    significantDigits' :: Int -> Int -> Int
+    significantDigits' n c | n < (10^c) = c
+                           | otherwise = significantDigits' n (c+1)
