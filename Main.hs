@@ -34,7 +34,7 @@
   --delete-original Delete the original name
 
   Possible improvements:
-  - Check first that renaming does in fact change alphabetical order. If not: abort.
+  - Check first that renaming does in fact change alphabetical order. If not, ask confirmation.
   - Add zeros before smaller numbers eg. 001, 002 if there are between 100 and 1000 files
   - Make prefix prepend text BEFORE index number
   - Display example of conversion with safety question (oldest file, for instance)
