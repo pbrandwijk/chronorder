@@ -143,13 +143,16 @@ printCopyright = do
   putStrLn "Chronorder  Copyright (C) 2013  Pieter Brandwijk"
   putStrLn "This program comes with ABSOLUTELY NO WARRANTY\n"
 
+printUsage = 
+  putStrLn $ usageInfo "Usage: chronorder [OPTION...]" options
+
 main = do
   args <- getArgs
   let (actions,nonOpts,msgs) = getOpt RequireOrder options args
   -- Terminate program if unrecognized options are found
   attempt (nonOpts /= []) (error $ "unrecognized arguments: " ++ unwords nonOpts)
   -- Terminate program if any errors in the options are found
-  attempt (msgs /= []) (error $ concat msgs ++ usageInfo "Usage: chronorder [OPTION...]" options)
+  attempt (msgs /= []) (putStrLn (concat msgs) >> printUsage >> exitWith ExitSuccess) --error $ concat msgs ++ usageInfo "Usage: chronorder [OPTION...]" options)
   opts <- foldl (>>=) (return defaultOptions) actions
   let Options { optVersion = showVersion,
                 optExtension = extensionFilter,
