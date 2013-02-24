@@ -26,11 +26,11 @@
   --infix [STRING] Insert infix between index and file name
   --no-safety Don't ask safety question
   --no-log Don't print a log with all changed filenames to the console
+  --descending Sort in descending order, so newest files first
 
   Possible options:
   --pattern [REGEX] Only order files that comply to the pattern
   --restore [STRING] Restore file names from given log file
-  --descending sort in descending order, so newest files first
   --delete-original Delete the original name
   --prefix Prepend text before the index number
 
@@ -57,6 +57,9 @@ import System.Posix.Files ( FileStatus, isRegularFile, modificationTime, getFile
 import System.Posix.Types ( EpochTime )
 import Data.List( isSuffixOf, (\\) )
 
+-- Type synonym for containing the file path of a file and its modification time
+type Handle = (EpochTime, FilePath)
+
 -- The options type constructor holds all the option types and functions used in the program.
 data Options = Options {
     optVersion :: Bool,
@@ -66,7 +69,8 @@ data Options = Options {
     optStartIndex :: Int,
     optInfix :: String,
     optSafety :: Bool,
-    optLog :: Bool
+    optLog :: Bool,
+    optOrder :: [Handle] -> [Handle]
   }
 
 -- The options that are loaded if no option is specified on the command line
@@ -79,7 +83,8 @@ defaultOptions = Options {
     optStartIndex = 1, -- Start at index 1 by default
     optInfix = "_", -- Default infix is "_"
     optSafety = True, -- By default ask safety question
-    optLog = True -- By default do show a log of the affected files
+    optLog = True, -- By default do show a log of the affected files
+    optOrder = id -- By default, keep ascending order from sorting algorithm
   }
 
 -- The specification of all the options used in the program
@@ -92,7 +97,8 @@ options = [
     Option [] ["start-index"] (ReqArg specStartIndex "INT") "start numbering at given index",
     Option [] ["infix"] (ReqArg specInfix "STRING") "insert infix between index and file name",
     Option [] ["no-safety"] (NoArg specSafety) "don't ask safety confirmation before renaming",
-    Option [] ["no-log"] (NoArg specLog) "don't print a log to the console"
+    Option [] ["no-log"] (NoArg specLog) "don't print a log to the console",
+    Option [] ["descending"] (NoArg specOrder) "make order descending, so newest file first"
   ]
 
 -- Set showVersion option to True
@@ -146,7 +152,10 @@ specLog opts = return opts {
     optLog = False
   }
 
-type Handle = (EpochTime, FilePath)
+-- Return reverse function so the order becomes opposite of the sorting order
+specOrder opts = return opts {
+    optOrder = reverse
+  }
 
 main = do
   -- Setting buffer modes assures that getChar doesn't need ENTER after a character has been input
@@ -167,7 +176,8 @@ main = do
                 optStartIndex = index,
                 optInfix = infx,
                 optSafety = safety, 
-                optLog = log } = opts
+                optLog = log, 
+                optOrder = order } = opts
   -- Show version and exit if -v option is specified
   attempt showVersion (putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess)
   -- Show help message and exit if help option is specified
@@ -182,7 +192,7 @@ main = do
   let filteredFiles = filter (fileFilter . snd) files
   let fileMap :: [Handle]
       fileMap = [ (modificationTime status, name) | (status, name) <- filteredFiles ]
-  let sortedFileMap = qsort fileMap
+  let sortedFileMap = (order . qsort) fileMap
   let newNameMap = genName (map snd sortedFileMap) index (length sortedFileMap) infx
   -- Don't ask for safety confirmation if --no-safety option is specified
   attempt safety (safetyQuestion directory newNameMap)
