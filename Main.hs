@@ -30,7 +30,7 @@
   Possible options:
   --pattern [REGEX] Only order files that comply to the pattern
   --restore [STRING] Restore file names from given log file
-  --reverse-order sort in ascending order, so newest files first
+  --descending sort in descending order, so newest files first
   --delete-original Delete the original name
   --prefix Prepend text before the index number
 
