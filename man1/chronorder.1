@@ -7,7 +7,7 @@
 chronorder \- rename the files in a directory so that the alphabetical order matches the chronological order
 .SH SYNOPSIS
 .B chronorder
-[\-d path] [\-e string] [\-\-start\-index int] [\-\-prefix string] [\-\-no\-safety]
+[\-d path] [\-e string] [\-\-start\-index int] [\-\-infix string] [\-\-no\-safety] [\-\-no\-log] [\-\-descending]
 .br
 .B chronorder
 [\-v]
@@ -21,6 +21,9 @@ The default behavior of the command is to prepend "1 " to the name of the oldest
 .I \-v
 Prints version information
 .TP
+.I \-h or \-?
+Prints help message
+.TP
 .I \-d
 Specify which directory to process. Default is the current directory.
 .TP
@@ -30,14 +33,17 @@ Only process files with given extension(s). Specify multiple extensions between 
 .I \-\-start\-index
 Specify the starting index number which is prepended to the oldest file.
 .TP
-.I \-\-prefix
-Specify a prefix that is given to each file. The prefix is put after the index number.
+.I \-\-infix
+Specify an infix that is given to each file. The infix is put after the index number, but before the original file name.
 .TP
 .I \-\-no\-safety
 Do not ask safety confirmation before altering the file names in the directory.
 .TP
 .I \-\-no\-log
 Do not print a log of the affected files to the console.
+.TP
+.I \-descending
+Reverse the order, so youngest file comes first.
 .SH EXAMPLE
 .I  chronorder \-e .bar
 .PP
