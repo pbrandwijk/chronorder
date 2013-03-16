@@ -12,10 +12,14 @@ command:
 
 $ make install
 
-This compiles the chronorder executable and compresses the man page. The executable is then installed in /usr/bin and the man page in /usr/share/man/man1. If you want to install into different locations, then first open the Makefile and change the BIN and MAN variables before issueing the make install command.
+This compiles the chronorder executable and compresses the 
+man page. The executable is then installed in /usr/bin and 
+the man page in /usr/share/man/man1. If you want to install 
+into different locations, then first open the Makefile and 
+change the BIN and MAN variables before issueing the make 
+install command.
 
-The program is now installed and available on your path.
-
+The program is now installed and available on your path. 
 Lastly clean up the source directory using:
 
 $ make clean
