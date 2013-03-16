@@ -31,7 +31,7 @@ Specify which directory to process. Default is the current directory.
 Only process files with given extension(s). Specify multiple extensions between quotes, eg. ".jpg .png".
 .TP
 .I \-\-start\-index
-Specify the starting index number which is prepended to the oldest file.
+Specify the starting index number which is prepended to the first file.
 .TP
 .I \-\-infix
 Specify an infix that is given to each file. The infix is put after the index number, but before the original file name.
@@ -57,9 +57,9 @@ foo.bar (1)
 .PP
 Then the result of executing the command will be:
 .br
-1 foo.bar
+1_foo.bar
 .br
-2 bar.bar
+2_bar.bar
 .br
 foo.foo
 .SH BUGS
