@@ -33,6 +33,7 @@
   --restore [STRING] Restore file names from given log file
   --delete-original Delete the original name
   --prefix Prepend text before the index number
+  --skip-hidden Skip hidden files
 
   Possible improvements:
   - Check first that renaming does in fact change alphabetical order. If not, prompt option to:
