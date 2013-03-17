@@ -219,6 +219,7 @@ safetyQuestion directory newNameMap = do
   putStrLn ("Caution, this will rename " ++ (show $ length newNameMap) ++ " files in directory " ++ directory)
   putStrLn "Are you sure you want to continue? (enter 's' to preview the effects) [y/n/s]: "
   char <- getChar
+  putStrLn ""
   case char of
     'y' -> return ()
     's' -> mapM_ printLog newNameMap >> safetyQuestion directory newNameMap
