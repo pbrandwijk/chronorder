@@ -50,8 +50,9 @@
 -}
 module Main ( main ) where
 
-import IO ( putStrLn )
-import System ( getArgs, exitWith, ExitCode (ExitSuccess) )
+import System.IO ( putStrLn )
+import System.Environment ( getArgs )
+import System.Exit ( exitWith, ExitCode (ExitSuccess) )
 import System.Console.GetOpt ( usageInfo, getOpt, 
               ArgDescr (NoArg, ReqArg), OptDescr (Option), ArgOrder (RequireOrder) )
 import System.Directory ( getDirectoryContents, getCurrentDirectory, doesDirectoryExist )
