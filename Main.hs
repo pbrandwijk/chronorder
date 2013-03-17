@@ -35,7 +35,10 @@
   --prefix Prepend text before the index number
 
   Possible improvements:
-  - Check first that renaming does in fact change alphabetical order. If not, ask confirmation.
+  - Check first that renaming does in fact change alphabetical order. If not, prompt option to:
+    1 Proceed as normal
+    2 Abort
+    3 Proceed, but without adding index numbers
   - Display example of conversion with safety question (oldest file, for instance)
   - Replace errors with putStrLn .. >> exitWith ExitSuccess
 
