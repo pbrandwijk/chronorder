@@ -23,6 +23,7 @@
   -d [STRING] specify directory to order, default is pwd (maybe without flag -d?)
   -e [STRING] Only process files with specified extension (use ".foo .bar" for more than one)
   --start-index [INT] Start at given index
+  --prefix Prepend text before the index number
   --infix [STRING] Insert infix between index and file name
   --no-safety Don't ask safety question
   --no-log Don't print a log with all changed filenames to the console
@@ -32,7 +33,6 @@
   --pattern [REGEX] Only order files that comply to the pattern
   --restore [STRING] Restore file names from given log file
   --delete-original Delete the original name
-  --prefix Prepend text before the index number
   --skip-hidden Skip hidden files
 
   Possible improvements:
@@ -42,6 +42,7 @@
     3 Proceed, but without adding index numbers
   - Display example of conversion with safety question (oldest file, for instance)
   - Replace errors with putStrLn .. >> exitWith ExitSuccess
+  - Possibly replace prefix, infix, suffix model with a positionable index number
 
   Test cases: 
   - equal names (different extension)
@@ -72,6 +73,7 @@ data Options = Options {
     optExtension :: String -> Bool,
     optPath :: IO FilePath,
     optStartIndex :: Int,
+    optPrefix :: String,
     optInfix :: String,
     optSafety :: Bool,
     optLog :: Bool,
@@ -86,6 +88,7 @@ defaultOptions = Options {
     optExtension = (\x -> True), -- Without an extension specified any file can be processed
     optPath = getCurrentDirectory, -- Without a directory specified use the current directory
     optStartIndex = 1, -- Start at index 1 by default
+    optPrefix = "", -- Default prefix is empty string
     optInfix = "_", -- Default infix is "_"
     optSafety = True, -- By default ask safety question
     optLog = True, -- By default do show a log of the affected files
@@ -100,6 +103,7 @@ options = [
     Option ['d'] ["directory"] (ReqArg specPath "DIRECTORY") "directory to process",
     Option ['e'] ["extension"] (ReqArg specExtension "EXTENSION") "only process files with specified extension",
     Option [] ["start-index"] (ReqArg specStartIndex "INT") "start numbering at given index",
+    Option [] ["prefix"] (ReqArg specPrefix "STRING") "prepend prefix before the index number",
     Option [] ["infix"] (ReqArg specInfix "STRING") "insert infix between index and file name",
     Option [] ["no-safety"] (NoArg specSafety) "don't ask safety confirmation before renaming",
     Option [] ["no-log"] (NoArg specLog) "don't print a log to the console",
@@ -143,6 +147,11 @@ specStartIndex arg opts = return opts {
   }
 
 -- Return the given argument as string.
+specPrefix arg opts = return opts {
+    optPrefix = arg
+  }
+
+-- Return the given argument as string.
 specInfix arg opts = return opts {
     optInfix = arg
   }
@@ -179,10 +188,12 @@ main = do
                 optExtension = extensionFilter,
                 optPath = path,
                 optStartIndex = index,
+                optPrefix = prefx,
                 optInfix = infx,
                 optSafety = safety, 
                 optLog = log, 
                 optOrder = order } = opts
+  putStrLn prefx
   -- Show version and exit if -v option is specified
   attempt showVersion (putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess)
   -- Show help message and exit if help option is specified
@@ -198,7 +209,7 @@ main = do
   let fileMap :: [Handle]
       fileMap = [ (modificationTime status, name) | (status, name) <- filteredFiles ]
   let sortedFileMap = (order . qsort) fileMap
-  let newNameMap = genName (map snd sortedFileMap) index (length sortedFileMap) infx
+  let newNameMap = genName (map snd sortedFileMap) index (length sortedFileMap) prefx infx
   -- Don't ask for safety confirmation if --no-safety option is specified
   attempt safety (safetyQuestion directory newNameMap)
   -- Do the actual renaming
@@ -240,20 +251,21 @@ printLog (a,b) = putStrLn $ a ++ " -> " ++ b
 
 type Index = Int
 type Total = Int
+type Prefix = String
 type Infix = String
 
 -- Generate a list of tuples with an old and new file path.
--- The new file path is based on the old file path, the index number and optional infix
+-- The new file path is based on the old file path, the index number and optional prefix and infix
 -- TODO: Check for double extensions (takeBaseName only trims last extension)
-genName :: [FilePath] -> Index -> Total -> Infix -> [(FilePath, FilePath)]
-genName [] _ _ _ = []
-genName (filePath:xs) i t infx = (filePath, newFilePath) : genName xs (i+1) t infx
+genName :: [FilePath] -> Index -> Total -> Prefix -> Infix -> [(FilePath, FilePath)]
+genName [] _ _ _ _ = []
+genName (filePath:xs) i t prefx infx = (filePath, newFilePath) : genName xs (i+1) t prefx infx
   where
     highestDigits = significantDigits t
     currentDigits = significantDigits i
     prependingZeros = replicate (highestDigits - currentDigits) '0'
     baseName = takeBaseName filePath
-    newBaseName = prependingZeros ++ show i ++ infx ++ baseName
+    newBaseName = prefx ++ prependingZeros ++ show i ++ infx ++ baseName
     newFilePath = replaceBaseName filePath newBaseName
 
 -- Counts the number of digits in the decimal representation of an integer
