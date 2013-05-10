@@ -33,6 +33,9 @@ Only process files with given extension(s). Specify multiple extensions between 
 .I \-\-start\-index
 Specify the starting index number which is prepended to the first file.
 .TP
+.I \-\-prefix
+Specify a prefix that is prepended to each file name. The prefix is put before the index number.
+.TP
 .I \-\-infix
 Specify an infix that is given to each file. The infix is put after the index number, but before the original file name.
 .TP
@@ -44,6 +47,9 @@ Do not print a log of the affected files to the console.
 .TP
 .I \-descending
 Reverse the order, so youngest file comes first.
+.TP
+.I \-\-delete\-original
+Do not retain the original file name in the new file name.
 .SH EXAMPLE
 .I  chronorder \-e .bar
 .PP
