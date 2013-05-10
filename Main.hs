@@ -28,11 +28,11 @@
   --no-safety Don't ask safety question
   --no-log Don't print a log with all changed filenames to the console
   --descending Sort in descending order, so newest files first
+  --delete-original Delete the original name
 
   Possible options:
   --pattern [REGEX] Only order files that comply to the pattern
   --restore [STRING] Restore file names from given log file
-  --delete-original Delete the original name
   --skip-hidden Skip hidden files
 
   Possible improvements:
@@ -77,7 +77,8 @@ data Options = Options {
     optInfix :: String,
     optSafety :: Bool,
     optLog :: Bool,
-    optOrder :: [Handle] -> [Handle]
+    optOrder :: [Handle] -> [Handle],
+    optOriginal :: String -> String
   }
 
 -- The options that are loaded if no option is specified on the command line
@@ -92,7 +93,8 @@ defaultOptions = Options {
     optInfix = "_", -- Default infix is "_"
     optSafety = True, -- By default ask safety question
     optLog = True, -- By default do show a log of the affected files
-    optOrder = id -- By default, keep ascending order from sorting algorithm
+    optOrder = id, -- By default, keep ascending order from sorting algorithm
+    optOriginal = id -- By default, keep the original file name
   }
 
 -- The specification of all the options used in the program
@@ -107,7 +109,8 @@ options = [
     Option [] ["infix"] (ReqArg specInfix "STRING") "insert infix between index and file name",
     Option [] ["no-safety"] (NoArg specSafety) "don't ask safety confirmation before renaming",
     Option [] ["no-log"] (NoArg specLog) "don't print a log to the console",
-    Option [] ["descending"] (NoArg specOrder) "make order descending, so newest file first"
+    Option [] ["descending"] (NoArg specOrder) "make order descending, so newest file first",
+    Option [] ["delete-original"] (NoArg specOriginal) "do not maintain the original file name"
   ]
 
 -- Set showVersion option to True
@@ -171,6 +174,11 @@ specOrder opts = return opts {
     optOrder = reverse
   }
 
+-- Return a function that maps any string to ""; essentially deleting the original
+specOriginal opts = return opts {
+    optOriginal = (\str -> "")
+  }
+
 main = do
   -- Setting buffer modes assures that getChar doesn't need ENTER after a character has been input
   -- terminal default is LineBuffering
@@ -192,7 +200,8 @@ main = do
                 optInfix = infx,
                 optSafety = safety, 
                 optLog = log, 
-                optOrder = order } = opts
+                optOrder = order,
+                optOriginal = original } = opts
   putStrLn prefx
   -- Show version and exit if -v option is specified
   attempt showVersion (putStrLn "Chronorder version \"1.0\"" >> exitWith ExitSuccess)
@@ -209,7 +218,7 @@ main = do
   let fileMap :: [Handle]
       fileMap = [ (modificationTime status, name) | (status, name) <- filteredFiles ]
   let sortedFileMap = (order . qsort) fileMap
-  let newNameMap = genName (map snd sortedFileMap) index (length sortedFileMap) prefx infx
+  let newNameMap = genName (map snd sortedFileMap) index (length sortedFileMap) original prefx infx
   -- Don't ask for safety confirmation if --no-safety option is specified
   attempt safety (safetyQuestion directory newNameMap)
   -- Do the actual renaming
@@ -251,21 +260,23 @@ printLog (a,b) = putStrLn $ a ++ " -> " ++ b
 
 type Index = Int
 type Total = Int
+type Original = String -> String
 type Prefix = String
 type Infix = String
 
 -- Generate a list of tuples with an old and new file path.
 -- The new file path is based on the old file path, the index number and optional prefix and infix
+-- The base name is processed through a function that decides if the original file name must be kept
 -- TODO: Check for double extensions (takeBaseName only trims last extension)
-genName :: [FilePath] -> Index -> Total -> Prefix -> Infix -> [(FilePath, FilePath)]
-genName [] _ _ _ _ = []
-genName (filePath:xs) i t prefx infx = (filePath, newFilePath) : genName xs (i+1) t prefx infx
+genName :: [FilePath] -> Index -> Total -> Original -> Prefix -> Infix -> [(FilePath, FilePath)]
+genName [] _ _ _ _ _ = []
+genName (filePath:xs) i t orig prefx infx = (filePath, newFilePath) : genName xs (i+1) t orig prefx infx
   where
     highestDigits = significantDigits t
     currentDigits = significantDigits i
     prependingZeros = replicate (highestDigits - currentDigits) '0'
     baseName = takeBaseName filePath
-    newBaseName = prefx ++ prependingZeros ++ show i ++ infx ++ baseName
+    newBaseName = prefx ++ prependingZeros ++ show i ++ infx ++ (orig baseName)
     newFilePath = replaceBaseName filePath newBaseName
 
 -- Counts the number of digits in the decimal representation of an integer
