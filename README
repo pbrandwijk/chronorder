@@ -8,7 +8,7 @@ the chronological order.
 
 A use case for the program is for example a directory 
 containing pictures of some event taken by different cameras.
-The alphabetical order of the pictures can than be matched
+The alphabetical order of the pictures can then be matched
 with the chronological order using this program.
 
 Keep in mind that this program alters the actual file names
